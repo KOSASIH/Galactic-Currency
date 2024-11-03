@@ -1,0 +1,29 @@
+# requirements.txt
+
+# Web framework
+Flask==2.2.2
+
+# Flask extensions for database management
+Flask-SQLAlchemy==2.5.1
+Flask-Migrate==3.1.0
+
+# HTTP requests
+requests==2.28.1
+
+# Cryptography library for secure transactions
+pycryptodome==3.15.0
+
+# Testing framework
+pytest==7.1.2
+
+# Web3 library for Ethereum blockchain interactions
+web3==5.29.0
+
+# Optional: For handling environment variables
+python-dotenv==0.20.0
+
+# Optional: For data validation and serialization
+marshmallow==3.18.0
+
+# Optional: For asynchronous tasks (if needed)
+Flask-Executor==1.5.0
