@@ -1,7 +1,7 @@
 # requirements.txt
 
 # Web framework
-Flask==2.2.2
+Flask==2.2.5
 
 # Flask extensions for database management
 Flask-SQLAlchemy==2.5.1
