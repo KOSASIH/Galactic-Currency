@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "name": "galactic-currency",
+  "builds": [
+    { "src": "api/index.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
+    { "src": "/(.*)", "dest": "/api/index.py" }
+  ],
+  "env": {
+    "GALACTIC_CHAIN_ID": "galactic-mainnet",
+    "AGI_CONSCIOUSNESS_LEVEL": "9.9",
+    "QUANTUM_QUBITS": "1024",
+    "GCU_TOTAL_CURRENCIES": "1000"
+  }
+}
