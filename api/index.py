@@ -7,6 +7,72 @@ Author: KOSASIH | AetherNova Forge | OmniGenesis AI
 import json, time, hashlib, random
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
+from urllib.request import urlopen, Request
+from urllib.error import URLError
+
+
+# ── Live Price Oracle (v3.1) ──────────────────────────────────────────────────
+# Anchors a subset of galactic currencies to real-world crypto market data via
+# CoinGecko's public API (no auth required), so price feeds have a live basis.
+COINGECKO_URL = ("https://api.coingecko.com/api/v3/coins/markets"
+                  "?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false")
+
+ANCHOR_MAP = {
+    "GCU":  {"coingecko_id": "bitcoin",     "scale": 1 / 60000},
+    "ARC":  {"coingecko_id": "ethereum",    "scale": 1 / 40},
+    "NEX":  {"coingecko_id": "solana",      "scale": 1 / 8},
+    "FLUX": {"coingecko_id": "binancecoin", "scale": 1 / 4.5},
+    "QBT":  {"coingecko_id": "cardano",     "scale": 1000},
+    "DRK":  {"coingecko_id": "polkadot",    "scale": 1000},
+    "PSI":  {"coingecko_id": "chainlink",   "scale": 1},
+    "NEU":  {"coingecko_id": "avalanche-2", "scale": 1},
+}
+
+_ORACLE_CACHE = {"data": None, "fetched_at": 0.0}
+_ORACLE_CACHE_TTL = 300  # 5 minutes
+
+
+def _fetch_live_market(timeout=8):
+    try:
+        req = Request(COINGECKO_URL, headers={"User-Agent": "GalacticCurrency/3.1"})
+        with urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode())
+    except (URLError, TimeoutError, ValueError, OSError):
+        return None
+
+
+def _get_live_market(force=False):
+    now = time.time()
+    if not force and _ORACLE_CACHE["data"] and (now - _ORACLE_CACHE["fetched_at"] < _ORACLE_CACHE_TTL):
+        return _ORACLE_CACHE["data"]
+    data = _fetch_live_market()
+    if data:
+        _ORACLE_CACHE["data"] = data
+        _ORACLE_CACHE["fetched_at"] = now
+        return data
+    return _ORACLE_CACHE["data"] or []
+
+
+def _anchored_price(symbol):
+    anchor = ANCHOR_MAP.get(symbol.upper())
+    if not anchor:
+        return None
+    market = _get_live_market()
+    coin = next((c for c in market if c.get("id") == anchor["coingecko_id"]), None)
+    if not coin:
+        return None
+    usd_price = coin.get("current_price", 0.0)
+    return {
+        "symbol": symbol.upper(),
+        "anchor_coin": coin.get("name"),
+        "anchor_symbol": (coin.get("symbol") or "").upper(),
+        "anchor_usd_price": usd_price,
+        "live_price_gcu": round(usd_price * anchor["scale"], 8),
+        "change_24h_pct": coin.get("price_change_percentage_24h"),
+        "market_cap_usd": coin.get("market_cap"),
+        "last_updated": coin.get("last_updated"),
+        "source": "coingecko",
+    }
 
 
 SAMPLE_CURRENCIES = [
@@ -47,7 +113,7 @@ def handle_request(path: str, method: str, params: dict) -> tuple:
                      "total_currencies": 1000, "powered_by": "AGI + Quantum + Neural Consensus",
                      "endpoints": ["/api/currencies","/api/agi/status","/api/quantum/status",
                                    "/api/consensus/status","/api/market/forecast",
-                                   "/api/blockchain/status","/api/health"]}
+                                   "/api/market/live","/api/blockchain/status","/api/health"]}
 
     if p == "/api/currencies":
         return 200, {"currencies": SAMPLE_CURRENCIES, "total": 1000, "shown": len(SAMPLE_CURRENCIES),
@@ -98,6 +164,20 @@ def handle_request(path: str, method: str, params: dict) -> tuple:
                      "key_drivers": ["Multi-civilization adoption","Quantum consensus expansion",
                                      "AGI-driven deflation"]}
 
+    if p == "/api/market/live":
+        sym_param = params.get("symbol")
+        if sym_param:
+            sym = sym_param[0].upper()
+            result = _anchored_price(sym)
+            if result:
+                return 200, result
+            return 404, {"error": f"No live anchor for '{sym}'",
+                         "anchored_symbols": list(ANCHOR_MAP.keys())}
+        results = [r for r in (_anchored_price(s) for s in ANCHOR_MAP) if r]
+        return 200, {"live_anchored_prices": results, "count": len(results),
+                     "source": "CoinGecko public API", "cache_ttl_seconds": _ORACLE_CACHE_TTL,
+                     "note": "A subset of galactic currencies are price-anchored to real crypto markets."}
+
     if p == "/api/blockchain/status":
         return 200, {"chain_id": "galactic-mainnet", "version": "3.0.0-quantum",
                      "height": 1000000, "tps": 1000000,
@@ -116,7 +196,8 @@ def handle_request(path: str, method: str, params: dict) -> tuple:
     return 404, {"error": f"Endpoint '{p}' not found",
                  "available_endpoints": ["/","/api/currencies","/api/agi/status",
                                          "/api/quantum/status","/api/consensus/status",
-                                         "/api/market/forecast","/api/blockchain/status","/api/health"]}
+                                         "/api/market/forecast","/api/market/live",
+                                         "/api/blockchain/status","/api/health"]}
 
 
 class handler(BaseHTTPRequestHandler):

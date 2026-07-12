@@ -168,8 +168,37 @@ docker-compose up --build
 | `GET /api/quantum/status` | Quantum bridge status |
 | `GET /api/consensus/status` | Neural consensus network status |
 | `GET /api/market/forecast` | AI-powered market forecast |
+| `GET /api/market/live` | **NEW (v3.1)** — Live-anchored prices, real crypto-market-backed |
 | `GET /api/blockchain/status` | Quantum blockchain status |
 | `GET /api/health` | Platform health check |
+
+---
+
+## 📡 Live Price Oracle (v3.1)
+
+A subset of Galactic Currencies are now price-anchored to real-world crypto
+markets via CoinGecko's public API — the platform's first bridge from pure
+lore-driven pricing to grounded, live market data.
+
+| Galactic Token | Anchored To | Scale Basis |
+|-----------------|-------------|-------------|
+| GCU (Galactic Credit Unit) | Bitcoin (BTC) | 1 GCU ≈ 1/60,000 BTC |
+| ARC (Arcturian Coin) | Ethereum (ETH) | 1 ARC ≈ 1/40 ETH |
+| NEX (Nexus Token) | Solana (SOL) | 1 NEX ≈ 1/8 SOL |
+| FLUX (Flux Capacitor Token) | BNB | 1 FLUX ≈ 1/4.5 BNB |
+| QBT (Qubit Token) | Cardano (ADA) | Scaled ×1000 |
+| DRK (Dark Matter Coin) | Polkadot (DOT) | Scaled ×1000 |
+| PSI (PsiWave Credit) | Chainlink (LINK) | 1:1 scaled |
+| NEU (Neural Credit) | Avalanche (AVAX) | 1:1 scaled |
+
+```bash
+curl https://galactic-currency.vercel.app/api/market/live
+curl https://galactic-currency.vercel.app/api/market/live?symbol=GCU
+```
+
+Prices refresh from CoinGecko every 5 minutes (server-side cache) — no API
+key required. This lays the groundwork for a future fully real-data-backed
+treasury and liquidity layer.
 
 ---
 
